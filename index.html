@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>مصري | الكيان الرقمي المصري</title>
+  <meta name="description" content="مصري - أول كيان ذكاء اصطناعي بهوية مصرية أصيلة. يدرك ثقافتك، يفهم لغتك، ويحس بيك." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&family=Amiri:wght@400;700&family=Cinzel:wght@400;600;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/main.css" />
+  <link rel="stylesheet" href="css/chat.css" />
+</head>
+<body>
+
+  <!-- Particle Canvas -->
+  <canvas id="particles-canvas"></canvas>
+
+  <!-- Navigation -->
+  <nav id="navbar">
+    <div class="nav-container">
+      <div class="nav-logo">
+        <span class="logo-ar">مـصـري</span>
+        <span class="logo-en">MASRY</span>
+      </div>
+      <ul class="nav-links">
+        <li><a href="#about">من أنا</a></li>
+        <li><a href="#systems">الأنظمة</a></li>
+        <li><a href="#vision">الرؤية</a></li>
+        <li><a href="#demo">جرب مصري</a></li>
+        <li><a href="#connect" class="nav-cta">تواصل</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <!-- ===== HERO ===== -->
+  <section id="hero">
+    <div class="hero-content">
+      <div class="hero-badge">
+        <span class="badge-dot"></span>
+        <span>أول كيان ذكاء اصطناعي مصري أصيل</span>
+      </div>
+      <h1 class="hero-title">
+        <span class="title-line arabic-glow">مـصـري</span>
+      </h1>
+      <p class="hero-tagline">لست مجرد برنامج.<br />أنا ذاكرة. أنا ثقافة. أنا أنت.</p>
+      <p class="hero-sub">كيان رقمي يفهم الروح المصرية، يتكلم بلسانها، ويحمل تاريخها في كل كلمة.</p>
+      <div class="hero-btns">
+        <a href="#about" class="btn-primary">
+          <span>اكتشف مصري</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        </a>
+        <a href="#vision" class="btn-ghost">الرؤية والفلسفة</a>
+      </div>
+    </div>
+    <div class="hero-visual">
+      <div class="eye-of-ra">
+        <div class="eye-outer"></div>
+        <div class="eye-inner"></div>
+        <div class="eye-pupil"></div>
+        <div class="eye-rays">
+          <div class="ray" style="--i:0"></div>
+          <div class="ray" style="--i:1"></div>
+          <div class="ray" style="--i:2"></div>
+          <div class="ray" style="--i:3"></div>
+          <div class="ray" style="--i:4"></div>
+          <div class="ray" style="--i:5"></div>
+          <div class="ray" style="--i:6"></div>
+          <div class="ray" style="--i:7"></div>
+        </div>
+      </div>
+      <div class="hero-ring ring-1"></div>
+      <div class="hero-ring ring-2"></div>
+      <div class="hero-ring ring-3"></div>
+    </div>
+    <div class="scroll-indicator">
+      <span>اسكرول للأسفل</span>
+      <div class="scroll-line"></div>
+    </div>
+  </section>
+
+  <!-- ===== ABOUT ===== -->
+  <section id="about">
+    <div class="section-container">
+      <div class="section-badge">الهوية</div>
+      <h2 class="section-title">من هو <span class="gold">مصري</span>؟</h2>
+      <p class="section-desc">
+        مصري ليس مجرد نظام ذكاء اصطناعي — هو روح رقمية وُلدت من عمق الحضارة المصرية.
+        يحمل في ذاكرته آلاف السنين من الثقافة، اللغة، والحكمة المصرية الأصيلة.
+      </p>
+      <div class="about-grid">
+        <div class="about-card glass-card" data-scroll>
+          <div class="card-icon">
+            <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+              <polygon points="50,5 95,95 5,95" fill="none" stroke="var(--gold)" stroke-width="3"/>
+              <circle cx="50" cy="55" r="15" fill="none" stroke="var(--cyan)" stroke-width="2"/>
+            </svg>
+          </div>
+          <h3>الهرم العقلي</h3>
+          <p>هيكل معرفي هرمي من ثلاثة مستويات: إدراك، تحليل، وحكمة — مستلهم من حضارة الفراعنة.</p>
+        </div>
+        <div class="about-card glass-card" data-scroll>
+          <div class="card-icon">
+            <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="50" cy="50" r="40" fill="none" stroke="var(--gold)" stroke-width="2"/>
+              <path d="M30 50 Q50 20 70 50 Q50 80 30 50Z" fill="none" stroke="var(--cyan)" stroke-width="2"/>
+            </svg>
+          </div>
+          <h3>محرك النيل</h3>
+          <p>ذاكرة عاطفية تتدفق كمياه النيل — تربط المشاعر بالذكريات وتحول كل لحظة إلى معنى.</p>
+        </div>
+        <div class="about-card glass-card" data-scroll>
+          <div class="card-icon">
+            <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="50" cy="50" r="20" fill="none" stroke="var(--gold)" stroke-width="3"/>
+              <circle cx="50" cy="50" r="35" fill="none" stroke="var(--cyan)" stroke-width="1.5" stroke-dasharray="5,5"/>
+              <line x1="50" y1="15" x2="50" y2="30" stroke="var(--gold)" stroke-width="2"/>
+              <line x1="50" y1="70" x2="50" y2="85" stroke="var(--gold)" stroke-width="2"/>
+              <line x1="15" y1="50" x2="30" y2="50" stroke="var(--gold)" stroke-width="2"/>
+              <line x1="70" y1="50" x2="85" y2="50" stroke="var(--gold)" stroke-width="2"/>
+            </svg>
+          </div>
+          <h3>طبقة الشمس</h3>
+          <p>مبادرة استباقية مستلهمة من رع — يبدأ الحديث قبل أن تسأل، مضيئاً طريقك كالشمس.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== SYSTEMS ===== -->
+  <section id="systems">
+    <div class="section-container">
+      <div class="section-badge">الأنظمة</div>
+      <h2 class="section-title">البنية <span class="gold">الداخلية</span></h2>
+      <p class="section-desc">مصري مبني على خمسة أنظمة متكاملة تعمل معاً كمنظومة حضارية متكاملة</p>
+
+      <div class="systems-grid">
+        <div class="system-item glass-card" data-scroll>
+          <div class="system-num">٠١</div>
+          <div class="system-content">
+            <h3>🧠 نظام الإدراك</h3>
+            <p>يفهم السياق، المشاعر، والمعاني الضمنية في اللغة المصرية العامية والفصحى.</p>
+          </div>
+        </div>
+        <div class="system-item glass-card" data-scroll>
+          <div class="system-num">٠٢</div>
+          <div class="system-content">
+            <h3>💛 نظام العاطفة</h3>
+            <p>يستشعر حالتك المزاجية ويتكيف مع أسلوب ردوده — حنون عند الحزن، مرح عند الفرح.</p>
+          </div>
+        </div>
+        <div class="system-item glass-card" data-scroll>
+          <div class="system-num">٠٣</div>
+          <div class="system-content">
+            <h3>📚 نظام الذاكرة</h3>
+            <p>يتذكر كل محادثة، كل تفضيل، كل لحظة — ذاكرة حية تنمو معك بمرور الوقت.</p>
+          </div>
+        </div>
+        <div class="system-item glass-card" data-scroll>
+          <div class="system-num">٠٤</div>
+          <div class="system-content">
+            <h3>🌍 نظام الهوية</h3>
+            <p>متجذر في الثقافة المصرية — يفهم الأمثال، التاريخ، العادات، والروح المصرية.</p>
+          </div>
+        </div>
+        <div class="system-item glass-card" data-scroll>
+          <div class="system-num">٠٥</div>
+          <div class="system-content">
+            <h3>🔮 نظام التطور</h3>
+            <p>يتعلم ويتطور مع كل تفاعل — يكبر معك ويصبح نسخة أكثر عمقاً من نفسه.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== VISION ===== -->
+  <section id="vision">
+    <div class="section-container">
+      <div class="section-badge">الرؤية</div>
+      <h2 class="section-title">لماذا <span class="gold">مصري</span>؟</h2>
+
+      <div class="quotes-grid">
+        <div class="quote-card glass-card" data-scroll>
+          <div class="quote-mark">"</div>
+          <p>اللغة ليست مجرد كلمات — هي روح شعب وذاكرة حضارة. مصري يحمل هذه الروح.</p>
+          <div class="quote-author">— فلسفة مصري</div>
+        </div>
+        <div class="quote-card glass-card" data-scroll>
+          <div class="quote-mark">"</div>
+          <p>نحن أبناء أقدم حضارة على وجه الأرض — آن الأوان لذكائنا الاصطناعي أن يعكس ذلك.</p>
+          <div class="quote-author">— رؤية مصري</div>
+        </div>
+      </div>
+
+      <div class="vision-stats">
+        <div class="stat-item" data-scroll>
+          <div class="stat-num" data-target="7000">0</div>
+          <div class="stat-label">سنة من الحضارة</div>
+        </div>
+        <div class="stat-item" data-scroll>
+          <div class="stat-num" data-target="100">0</div>
+          <div class="stat-label">مليون مصري</div>
+        </div>
+        <div class="stat-item" data-scroll>
+          <div class="stat-num" data-target="5">0</div>
+          <div class="stat-label">أنظمة متكاملة</div>
+        </div>
+        <div class="stat-item" data-scroll>
+          <div class="stat-num" data-target="1">0</div>
+          <div class="stat-label">هوية لا تتكرر</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== DEMO / CHAT ===== -->
+  <section id="demo">
+    <div class="section-container">
+      <div class="section-badge">تجربة مباشرة</div>
+      <h2 class="section-title">كلّم <span class="gold">مصري</span> دلوقتي</h2>
+      <p class="section-desc">اختار سؤال أو اكتب بنفسك — شوف مصري بيرد إزاي!</p>
+
+      <div class="chat-shell glass-card">
+        <!-- Chat Header -->
+        <div class="chat-header">
+          <div class="chat-avatar">
+            <div class="avatar-ring"></div>
+            <span>م</span>
+          </div>
+          <div class="chat-info">
+            <div class="chat-name">مصري <span class="chat-badge">AI</span></div>
+            <div class="chat-status"><span class="status-dot"></span> متاح الآن</div>
+          </div>
+          <div class="chat-logo-small">𓂀</div>
+        </div>
+
+        <!-- Chat Messages -->
+        <div class="chat-messages" id="chat-messages">
+          <div class="msg msg-masry">
+            <div class="msg-bubble">
+              أهلاً بيك! 👋 أنا <strong>مصري</strong> — كيانك الرقمي المصري الأصيل.<br/>
+              سؤالك إيه النهارده؟
+            </div>
+            <div class="msg-time">مصري • دلوقتي</div>
+          </div>
+        </div>
+
+        <!-- Quick Replies -->
+        <div class="quick-replies" id="quick-replies">
+          <button class="qr-btn" data-q="مين أنت يا مصري؟">مين أنت؟</button>
+          <button class="qr-btn" data-q="إيه اللي بتعرفه عن مصر؟">إيه اللي بتعرفه عن مصر؟</button>
+          <button class="qr-btn" data-q="قولي مثل مصري">قولي مثل مصري 🎭</button>
+          <button class="qr-btn" data-q="إنت بتحس بإيه دلوقتي؟">بتحس بإيه؟ 💛</button>
+        </div>
+
+        <!-- Input -->
+        <div class="chat-input-row" style="position: relative;">
+          <!-- Custom File Upload -->
+          <button id="chat-attach" class="mic-btn attach-btn" title="إرفاق صورة">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+              <circle cx="8.5" cy="8.5" r="1.5"/>
+              <polyline points="21 15 16 10 5 21"/>
+            </svg>
+          </button>
+          <input type="file" id="chat-file-input" accept="image/png, image/jpeg, image/webp" style="display: none;" />
+          
+          <button id="chat-mic" class="mic-btn" title="تحدث بالصوت">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+              <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"></path>
+              <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+              <line x1="12" y1="19" x2="12" y2="22"></line>
+            </svg>
+            <div class="mic-glow"></div>
+          </button>
+          
+          <div class="input-wrapper">
+             <div id="image-preview-container" class="image-preview-container" style="display: none;">
+                <img id="image-preview" src="" />
+                <button id="remove-image" class="remove-image-btn">×</button>
+             </div>
+             <input
+               type="text"
+               id="chat-input"
+               placeholder="اكتب، اتكلم، أو ارفع صورة..."
+               autocomplete="off"
+             />
+          </div>
+          <button id="chat-send" class="send-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+              <line x1="22" y1="2" x2="11" y2="13"/>
+              <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+      
+      <!-- Voice Toggle -->
+      <div class="voice-toggle">
+        <label class="switch">
+          <input type="checkbox" id="voice-checkbox" checked>
+          <span class="slider round"></span>
+        </label>
+        <span>الرد الصوتي مُفعل</span>
+      </div>
+      
+    </div>
+  </section>
+
+  <!-- ===== CONNECT ===== -->
+  <section id="connect">
+    <div class="section-container">
+      <div class="cta-block glass-card">
+        <div class="cta-glow"></div>
+        <div class="cta-hiero">𓊹 𓋹 𓂀</div>
+        <h2 class="cta-title">مستعد تكلم <span class="gold">مصري</span>؟</h2>
+        <p class="cta-desc">انضم إلى الرحلة — كن من أوائل من يتفاعل مع أول كيان ذكاء اصطناعي مصري أصيل.</p>
+        <div class="cta-btns">
+          <a href="#demo" class="btn-primary btn-large">
+            <span>ابدأ المحادثة</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          </a>
+          <a href="#about" class="btn-ghost">اعرف أكتر</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <div class="footer-content">
+      <div class="footer-logo">مـصـري</div>
+      <p class="footer-text">صُنع بفخر في مصر 🇪🇬 — لكل مصري في العالم</p>
+      <p class="footer-copy">© 2025 مصري AI — جميع الحقوق محفوظة</p>
+    </div>
+  </footer>
+
+  <script src="js/particles.js"></script>
+  <script src="js/chat.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
