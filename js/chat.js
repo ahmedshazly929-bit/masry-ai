@@ -79,17 +79,54 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // --- 🗣️ Speech Synthesis (Text-to-Speech) ---
-  function speakText(text) {
-      if (!voiceToggle.checked) return; // لو المستخدم قفل الصوت
+  let bestArabicVoice = null;
+
+  function loadVoices() {
+      const voices = window.speechSynthesis.getVoices();
+      // محاولة البحث عن أفضل صوت (Natural, Neural, أو Maged/Hoda)
+      bestArabicVoice = voices.find(v => v.lang === 'ar-EG' && (v.name.includes('Natural') || v.name.includes('Neural'))) ||
+                        voices.find(v => v.lang === 'ar-EG') ||
+                        voices.find(v => v.lang.startsWith('ar'));
+  }
+
+  window.speechSynthesis.onvoiceschanged = loadVoices;
+  loadVoices();
+
+  function speakText(text, callback) {
+      if (!voiceToggle.checked) {
+          if (callback) callback();
+          return;
+      }
       
-      // نوقف أي كلام شغال حالياً
       window.speechSynthesis.cancel();
       
       const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = 'ar-EG'; // اللغة العربية - لهجة مصرية لو متاحة في النظام
-      utterance.rate = 0.95; // سرعة هادية ومريحة
-      utterance.pitch = 0.8; // طبقة صوت عميقة نسبياً بتليق بمصري
+      if (bestArabicVoice) utterance.voice = bestArabicVoice;
+      utterance.lang = 'ar-EG';
+      utterance.rate = 1.0; 
+      utterance.pitch = 1.0; 
       
+      utterance.onstart = () => {
+          // إضافة أنيميشن للصوت في آخر فقاعة
+          const lastBubble = chatMessages.lastElementChild?.querySelector('.msg-bubble');
+          if (lastBubble) {
+              lastBubble.classList.add('speaking');
+              const waves = document.createElement('div');
+              waves.className = 'voice-waves';
+              waves.innerHTML = '<span></span><span></span><span></span><span></span>';
+              lastBubble.prepend(waves);
+          }
+      };
+
+      utterance.onend = () => {
+          const lastBubble = chatMessages.lastElementChild?.querySelector('.msg-bubble');
+          if (lastBubble) {
+              lastBubble.classList.remove('speaking');
+              lastBubble.querySelector('.voice-waves')?.remove();
+          }
+          if (callback) callback();
+      };
+
       window.speechSynthesis.speak(utterance);
   }
 
@@ -202,7 +239,17 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="msg-time">مصري • دلوقتي</div>
             `;
             playSound('receive');
-            speakText(text); // 🗣️ قراءة الرد بصوت
+            
+            // قراءة الرد مع إمكانية فتح المايك بعد ما يخلص
+            speakText(text, () => {
+                // لو الرد الصوتي مفعل، نفتح المايك أوتوماتيك للدردشة "المستمرة"
+                if (voiceToggle.checked && !isRecording) {
+                    setTimeout(() => {
+                        micBtn.click();
+                    }, 500);
+                }
+            });
+            
             scrollToBottom();
         }, 500); 
     }
