@@ -13,7 +13,7 @@ async function chatWithGemini(userMessage, imageBase64, mimeType, API_KEY) {
         return "للأسف أنا مش قادر أتصل بعقلي دلوقتي... المبرمج لسة محطش الـ API Key في البيئة بتاعة السيرفر! 🇪🇬";
     }
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${API_KEY}`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${API_KEY}`;
     
     // بناء الأجزاء (Parts) للاستعلام
     const parts = [];
@@ -56,6 +56,11 @@ async function chatWithGemini(userMessage, imageBase64, mimeType, API_KEY) {
         if (!response.ok) {
             const errText = await response.text();
             console.error("API Error", response.status, errText);
+            
+            if (response.status === 429) {
+                return "يا غالي إحنا اتكلمنا كتير أوي دلوقتي! جوجل بتقولي اهدا شوية عشان السيرفر ميسخنش... خلينا نستنى دقيقة ونرجع نكمل دردشة. ☕🇪🇬";
+            }
+            
             return `عذراً، جوجل رفضت الطلب! كود الخطأ: ${response.status}. تفاصيل: ${errText}`;
         }
 
