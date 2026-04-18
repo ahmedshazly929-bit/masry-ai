@@ -101,19 +101,22 @@ document.addEventListener('DOMContentLoaded', () => {
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
       recognition = new SpeechRecognition();
       recognition.lang = 'ar-EG'; 
-      recognition.continuous = false; // أفضل توافقية وتقليل أخطاء المتصفح
+      recognition.continuous = false; 
       recognition.interimResults = true;
 
       let baseText = '';
+      let hasHeardSomething = false;
 
       recognition.onstart = function() {
           isRecording = true;
+          hasHeardSomething = false;
           micBtn.classList.add('recording');
           baseText = chatInput.value ? chatInput.value + ' ' : '';
-          chatInput.placeholder = 'بدأت التسجيل...';
+          chatInput.placeholder = 'الميكروفون شغال، اتكلم بوضوح...';
       };
 
       recognition.onresult = function(event) {
+          hasHeardSomething = true;
           let transcript = '';
           for (let i = event.resultIndex; i < event.results.length; ++i) {
               transcript += event.results[i][0].transcript;
@@ -129,14 +132,24 @@ document.addEventListener('DOMContentLoaded', () => {
       recognition.onerror = function(event) {
           console.error("Speech error:", event.error);
           micBtn.classList.remove('recording');
-          chatInput.placeholder = 'حدث خطأ في المايك...';
           isRecording = false;
+          
+          if (event.error === 'no-speech') {
+              chatInput.placeholder = 'لم أسمع شيئاً!';
+              alert('مصري لم يسمع صوتك! تأكد من أن الميكروفون غير مكتوم، وتحقق من إعدادات الخصوصية في ويندوز (Windows Privacy Settings -> Microphone).');
+          } else if (event.error === 'not-allowed') {
+              alert('المتصفح ممنوع من استخدام الميكروفون. برجاء إعطاء الصلاحية.');
+          } else {
+              chatInput.placeholder = 'حدث خطأ في المايك...';
+          }
       };
 
       recognition.onend = function() {
           isRecording = false;
           micBtn.classList.remove('recording');
-          chatInput.placeholder = 'اكتب، اتكلم، أو ارفع صورة...';
+          if (!hasHeardSomething && !chatInput.value) {
+              chatInput.placeholder = 'اكتب أو اتكلم هنا...';
+          }
       };
   } else {
       // إخفاء زر المايك لو المتصفح مش بيدعم
