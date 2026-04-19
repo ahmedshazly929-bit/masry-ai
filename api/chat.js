@@ -42,7 +42,7 @@ async function chatWithGemini(userMessage, imageBase64, mimeType, API_KEY, histo
         ],
         generationConfig: {
             temperature: 0.7,
-            maxOutputTokens: 250,
+            maxOutputTokens: 1024,
         }
     };
 
