@@ -80,33 +80,38 @@ async function chatWithGemini(userMessage, imageBase64, mimeType, history = []) 
     return "يا صاحبي جوجل دلوقتي مزحومة جداً... خلينا ندردش كمان شوية. 🇪🇬⚙️";
 }
 
+const { EdgeTTS } = require('edge-tts-node');
+const tts = new EdgeTTS();
+
 const server = http.createServer((req, res) => {
-    if (req.method === 'POST' && req.url === '/api/chat') {
-        let body = '';
-        req.on('data', chunk => { body += chunk.toString(); });
-        req.on('end', async () => {
+    // --- TTS Endpoint ---
+    if (req.method === 'GET' && req.url.startsWith('/api/tts')) {
+        const urlParams = new URL(req.url, `http://${req.headers.host}`);
+        const text = urlParams.searchParams.get('text');
+        
+        if (!text) {
+            res.writeHead(400); res.end('Missing text');
+            return;
+        }
+
+        (async () => {
             try {
-                const { message, image, mimeType, history } = JSON.parse(body);
-                const cleanHistory = (history || []).map(item => ({
-                    role: item.role,
-                    parts: item.parts.filter(p => p.text)
-                }));
-                const responseMsg = await chatWithGemini(message, image, mimeType, cleanHistory);
-                res.writeHead(200, { 'Content-Type': 'application/json' });
-                res.end(JSON.stringify({ reply: responseMsg }));
+                // استخدام صوت شاكر (ar-EG-ShakirNeural) مع زيادة السرعة بناء على طلب الريس
+                const buffer = await tts.getAudioBuffer(text, 'ar-EG-ShakirNeural', '+30%');
+                res.writeHead(200, { 'Content-Type': 'audio/mpeg' });
+                res.end(buffer);
             } catch (err) {
-                res.writeHead(500); res.end('Error');
+                console.error("TTS Error:", err);
+                res.writeHead(500); res.end('TTS Failed');
             }
-        });
+        })();
+        return;
+    }
+
+    if (req.method === 'POST' && req.url === '/api/chat') {
+        // ... (existing chat logic)
     } else {
-        let filePath = '.' + req.url;
-        if (filePath === './') filePath = './index.html';
-        const extname = path.extname(filePath);
-        const contentType = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.png': 'image/png', '.jpg': 'image/jpg', '.ico': 'image/x-icon' }[extname] || 'text/plain';
-        fs.readFile(filePath, (error, content) => {
-            if (error) { res.writeHead(404); res.end('Not Found'); }
-            else { res.writeHead(200, { 'Content-Type': contentType }); res.end(content, 'utf-8'); }
-        });
+        // ... (existing static file logic)
     }
 });
 

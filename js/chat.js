@@ -95,21 +95,26 @@ document.addEventListener('DOMContentLoaded', () => {
   window.speechSynthesis.onvoiceschanged = loadVoices;
   loadVoices();
 
+  // --- نطق النص (Text to Speech) بصوت شاكر الطبيعي ---
   function speakText(text, callback) {
       if (!voiceToggle.checked) {
           if (callback) callback();
           return;
       }
+
+      // وقف أي صوت شغال
+      if (window.currentAudio) {
+          window.currentAudio.pause();
+          window.currentAudio = null;
+      }
+
+      const encodedText = encodeURIComponent(text);
+      const audioUrl = `/api/tts?text=${encodedText}`;
       
-      window.speechSynthesis.cancel();
-      
-      const utterance = new SpeechSynthesisUtterance(text);
-      if (bestArabicVoice) utterance.voice = bestArabicVoice;
-      utterance.lang = 'ar-EG';
-      utterance.rate = 1.0; 
-      utterance.pitch = 1.0; 
-      
-      utterance.onstart = () => {
+      const audio = new Audio(audioUrl);
+      window.currentAudio = audio;
+
+      audio.onplay = () => {
           // إضافة أنيميشن للصوت في آخر فقاعة
           const lastBubble = chatMessages.lastElementChild?.querySelector('.msg-bubble');
           if (lastBubble) {
@@ -121,7 +126,18 @@ document.addEventListener('DOMContentLoaded', () => {
           }
       };
 
-      utterance.onend = () => {
+      audio.onended = () => {
+          const lastBubble = chatMessages.lastElementChild?.querySelector('.msg-bubble');
+          if (lastBubble) {
+              lastBubble.classList.remove('speaking');
+              lastBubble.querySelector('.voice-waves')?.remove();
+          }
+          window.currentAudio = null;
+          if (callback) callback();
+      };
+
+      audio.onerror = (e) => {
+          console.error("TTS Audio Error:", e);
           const lastBubble = chatMessages.lastElementChild?.querySelector('.msg-bubble');
           if (lastBubble) {
               lastBubble.classList.remove('speaking');
@@ -130,7 +146,10 @@ document.addEventListener('DOMContentLoaded', () => {
           if (callback) callback();
       };
 
-      window.speechSynthesis.speak(utterance);
+      audio.play().catch(err => {
+          console.warn("Audio play blocked by browser or failed:", err);
+          if (callback) callback();
+      });
   }
 
   // --- 🎙️ Speech Recognition (Speech-to-Text) ---

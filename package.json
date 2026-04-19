@@ -1,0 +1,14 @@
+{
+  "name": "masry-ai",
+  "version": "1.0.0",
+  "description": "First Egyptian AI Entity",
+  "main": "server.js",
+  "dependencies": {
+    "dotenv": "^16.0.0",
+    "edge-tts-node": "^1.1.0"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  }
+}
