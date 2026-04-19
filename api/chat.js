@@ -17,7 +17,7 @@ const MASRY_SYSTEM_INSTRUCTION = `
 `;
 
 async function chatWithGemini(userMessage, imageBase64, mimeType, API_KEY, history = []) {
-    if (!API_KEY) return "للأسف الـ API Key مش موجود! 🇪🇬";
+    if (!API_KEY) return { reply: "للأسف الـ API Key مش موجود! 🇪🇬" };
 
     for (const modelName of MODELS) {
         const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${API_KEY}`;
@@ -53,19 +53,15 @@ async function chatWithGemini(userMessage, imageBase64, mimeType, API_KEY, histo
                     const data = await response.json();
                     let rawReply = data.candidates[0].content.parts[0].text;
                     
-                    // --- تنظيف المصدر (Source Cleaning) ---
-                    // استخراج التصانيف للاستخدام البرمجي في الذاكرة (لو حبينا نبعتها في حقل منفصل مستقبلاً)
                     let category = 'General';
                     const categoryMatch = rawReply.match(/\[\[Category:\s*([\w\s-]+)\s*\]\]/i);
                     if (categoryMatch) category = categoryMatch[1].trim();
                     
-                    // مسح الوسوم تماماً من النص اللي هيروح للمستخدم
                     let cleanReply = rawReply.replace(/\[\[Category:.*?\]\]/gi, '').trim();
-                    
                     return { reply: cleanReply, category: category };
                 }
 
-                if (response.status === 429) return { reply: "يا غالي جوجل بتقول اهدا شوية... دقيقة ونرجع نكمل! ☕" };
+                if (response.status === 429) return { reply: "يا غالي جوجل بتقول اهدا شوية... دقيقة ونرجع نكمل! ☕", category: 'System' };
                 if (response.status === 503) {
                     await new Promise(r => setTimeout(r, 1000));
                     continue;
@@ -73,7 +69,7 @@ async function chatWithGemini(userMessage, imageBase64, mimeType, API_KEY, histo
             } catch (err) { console.error(`Fetch err ${modelName}:`, err); }
         }
     }
-    return { reply: "يا صاحبي جوجل دلوقتي مزحومة جداً... خلينا ندردش كمان شوية. 🇪🇬⚙️" };
+    return { reply: "يا صاحبي جوجل دلوقتي مزحومة جداً... خلينا ندردش كمان شوية. 🇪🇬⚙️", category: 'System' };
 }
 
 export default async function handler(req, res) {
@@ -95,6 +91,6 @@ export default async function handler(req, res) {
     const result = await chatWithGemini(message, image, mimeType, API_KEY, cleanHistory);
     res.status(200).json(result);
   } catch(error) {
-    res.status(500).json({ reply: "تحصل في أحسن العائلات! السيرفر حصله تشنج بسيط، جرب تبعت الرسالة تاني. 🇪🇬" });
+    res.status(500).json({ reply: "تحصل في أحسن العائلات! السيرفر حصله تشنج بسيط، جرب تبعت الرسالة تاني. 🇪🇬", category: 'Error' });
   }
 }

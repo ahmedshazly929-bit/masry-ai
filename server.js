@@ -97,10 +97,14 @@ const server = http.createServer((req, res) => {
         
         (async () => {
             try {
-                // استخدام MsEdgeTTS مع النطق المصري شاكر
-                const buffer = await tts.getAudioBuffer(text, 'ar-EG-ShakirNeural', '+20%');
+                // استخدام محرك Google Translate TTS كحل عالي الاستقرار ومجاني للهجة العربية
+                const url = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(text)}&tl=ar&client=tw-ob`;
+                const response = await fetch(url);
+                if (!response.ok) throw new Error("Google TTS Failed");
+                
+                const buffer = await response.arrayBuffer();
                 res.writeHead(200, { 'Content-Type': 'audio/mpeg' });
-                res.end(buffer);
+                res.end(Buffer.from(buffer));
             } catch (err) {
                 console.error("TTS Error:", err);
                 res.writeHead(500); res.end('TTS Failed');

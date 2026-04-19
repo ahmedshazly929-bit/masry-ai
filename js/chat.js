@@ -1,158 +1,122 @@
-/* ===============================
-   MASRY AI — Chat Logic & API
-   =============================== */
-
 document.addEventListener('DOMContentLoaded', () => {
   const chatMessages = document.getElementById('chat-messages');
   const chatInput = document.getElementById('chat-input');
-  const chatSendBtn = document.getElementById('chat-send');
-  const quickReplies = document.querySelectorAll('.qr-btn');
-  
-  // Voice & Image UI Elements
-  const micBtn = document.getElementById('chat-mic');
-  const voiceToggle = document.getElementById('voice-checkbox');
-  const attachBtn = document.getElementById('chat-attach');
-  const fileInput = document.getElementById('chat-file-input');
-  const imgPreviewContainer = document.getElementById('image-preview-container');
-  const imgPreview = document.getElementById('image-preview');
-  const removeImgBtn = document.getElementById('remove-image');
+  const sendBtn = document.getElementById('send-btn');
+  const micBtn = document.getElementById('mic-btn');
+  const voiceToggle = document.getElementById('voice-toggle');
+  const imageInput = document.getElementById('image-input');
+  const imagePreview = document.getElementById('image-preview');
 
-  let currentImageBase64 = null;
-  let currentImageMimeType = null;
-  
-  // --- 🧠 Conversation Memory ---
-  let chatHistory = []; // { role: 'user'|'model', parts: [{ text: '...' }] }
+  let chatHistory = [];
+  let currentImage = null;
 
-  // --- 📷 Image Attachment Handling ---
-  attachBtn.addEventListener('click', () => { fileInput.click(); });
+  // --- 🔊 Sound Effects ---
+  const sounds = {
+    send: new Audio('https://assets.mixkit.co/active_storage/sfx/2354/2354-preview.mp3'),
+    receive: new Audio('https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3')
+  };
 
-  fileInput.addEventListener('change', (e) => {
-      const file = e.target.files[0];
-      if(!file) return;
-
-      const reader = new FileReader();
-      reader.onload = (event) => {
-          currentImageBase64 = event.target.result;
-          currentImageMimeType = file.type;
-          imgPreview.src = currentImageBase64;
-          imgPreviewContainer.style.display = 'flex';
-          
-          // Focus input after attaching
-          chatInput.focus();
-      };
-      reader.readAsDataURL(file);
-  });
-
-  removeImgBtn.addEventListener('click', () => {
-      currentImageBase64 = null;
-      currentImageMimeType = null;
-      imgPreviewContainer.style.display = 'none';
-      imgPreview.src = '';
-      fileInput.value = '';
-  });
-
-  // --- 🔊 Sound System (Web Audio API) ---
-  const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  
   function playSound(type) {
-      if(audioCtx.state === 'suspended') audioCtx.resume();
-      const osc = audioCtx.createOscillator();
-      const gainNode = audioCtx.createGain();
-      
-      osc.connect(gainNode);
-      gainNode.connect(audioCtx.destination);
-      
-      if(type === 'send') {
-          osc.type = 'sine';
-          osc.frequency.setValueAtTime(600, audioCtx.currentTime);
-          osc.frequency.exponentialRampToValueAtTime(800, audioCtx.currentTime + 0.1);
-          gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
-          gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
-          osc.start();
-          osc.stop(audioCtx.currentTime + 0.1);
-      } else if (type === 'receive') {
-          osc.type = 'triangle';
-          osc.frequency.setValueAtTime(400, audioCtx.currentTime);
-          osc.frequency.exponentialRampToValueAtTime(300, audioCtx.currentTime + 0.3);
-          gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
-          gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
-          osc.start();
-          osc.stop(audioCtx.currentTime + 0.3);
-      }
+    sounds[type].volume = 0.2;
+    sounds[type].play().catch(() => {});
   }
 
-  // --- 🗣️ Speech Synthesis (Text-to-Speech) ---
-  let bestArabicVoice = null;
-
-  function loadVoices() {
-      const voices = window.speechSynthesis.getVoices();
-      // محاولة البحث عن أفضل صوت (Natural, Neural, أو Maged/Hoda)
-      bestArabicVoice = voices.find(v => v.lang === 'ar-EG' && (v.name.includes('Natural') || v.name.includes('Neural'))) ||
-                        voices.find(v => v.lang === 'ar-EG') ||
-                        voices.find(v => v.lang.startsWith('ar'));
-  }
-
-  window.speechSynthesis.onvoiceschanged = loadVoices;
-  loadVoices();
-
-  // --- نطق النص (Text to Speech) بصوت شاكر الطبيعي ---
+  // --- 🎤 Text-to-Speech (With Robust Fallback) ---
   function speakText(text, callback) {
       if (!voiceToggle.checked) {
           if (callback) callback();
           return;
       }
 
-      // وقف أي صوت شغال
+      // 1. وقف أي صوت شغال
       if (window.currentAudio) {
           window.currentAudio.pause();
           window.currentAudio = null;
       }
+      if (window.speechSynthesis.speaking) {
+          window.speechSynthesis.cancel();
+      }
 
-      const encodedText = encodeURIComponent(text);
+      // 2. تنظيف النص تماماً قبل النطق (ممنوع دخول أي وسوم للأذن)
+      const cleanText = text.replace(/\[\[Category:.*?\]\]/gi, '').trim();
+      if (!cleanText) {
+          if (callback) callback();
+          return;
+      }
+
+      const encodedText = encodeURIComponent(cleanText);
       const audioUrl = `/api/tts?text=${encodedText}`;
       
       const audio = new Audio(audioUrl);
       window.currentAudio = audio;
 
+      // عند بدء التشغيل: شغل الأنيميشن
       audio.onplay = () => {
-          // إضافة أنيميشن للصوت في آخر فقاعة
           const lastBubble = chatMessages.lastElementChild?.querySelector('.msg-bubble');
           if (lastBubble) {
               lastBubble.classList.add('speaking');
-              const waves = document.createElement('div');
-              waves.className = 'voice-waves';
-              waves.innerHTML = '<span></span><span></span><span></span><span></span>';
-              lastBubble.prepend(waves);
+              if (!lastBubble.querySelector('.voice-waves')) {
+                  const waves = document.createElement('div');
+                  waves.className = 'voice-waves';
+                  waves.innerHTML = '<span></span><span></span><span></span><span></span>';
+                  lastBubble.prepend(waves);
+              }
           }
       };
 
       audio.onended = () => {
-          const lastBubble = chatMessages.lastElementChild?.querySelector('.msg-bubble');
-          if (lastBubble) {
-              lastBubble.classList.remove('speaking');
-              lastBubble.querySelector('.voice-waves')?.remove();
-          }
+          stopSpeakingAnimation();
           window.currentAudio = null;
           if (callback) callback();
       };
 
-      audio.onerror = (e) => {
-          console.error("TTS Audio Error:", e);
-          const lastBubble = chatMessages.lastElementChild?.querySelector('.msg-bubble');
-          if (lastBubble) {
-              lastBubble.classList.remove('speaking');
-              lastBubble.querySelector('.voice-waves')?.remove();
-          }
-          if (callback) callback();
+      // --- الفشل والتحويل للبديل (FALLBACK) ---
+      audio.onerror = () => {
+          console.warn("Backend TTS failed, falling back to browser...");
+          fallbackToBrowserSpeech(cleanText, callback);
       };
 
+      // محاولة التشغيل مع حماية الـ Autoplay
       audio.play().catch(err => {
-          console.warn("Audio play blocked by browser or failed:", err);
-          if (callback) callback();
+          console.warn("Audio play blocked, falling back to browser...");
+          fallbackToBrowserSpeech(cleanText, callback);
       });
   }
 
-  // --- 🎙️ Speech Recognition (Speech-to-Text) ---
+  function fallbackToBrowserSpeech(text, callback) {
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'ar-EG'; // إجبار اللغة العربية (مصر)
+      
+      // اختيار أفضل صوت عربي متاح
+      const voices = window.speechSynthesis.getVoices();
+      const arabicVoice = voices.find(v => v.lang.includes('ar')) || voices[0];
+      if (arabicVoice) utterance.voice = arabicVoice;
+
+      utterance.rate = 1.1;
+      utterance.pitch = 1.0;
+
+      utterance.onstart = () => {
+          const lastBubble = chatMessages.lastElementChild?.querySelector('.msg-bubble');
+          if (lastBubble) lastBubble.classList.add('speaking');
+      };
+
+      utterance.onend = () => {
+          stopSpeakingAnimation();
+          if (callback) callback();
+      };
+
+      window.speechSynthesis.speak(utterance);
+  }
+
+  function stopSpeakingAnimation() {
+      const lastBubble = chatMessages.lastElementChild?.querySelector('.msg-bubble');
+      if (lastBubble) {
+          lastBubble.classList.remove('speaking');
+          lastBubble.querySelector('.voice-waves')?.remove();
+      }
+  }
+
+  // --- 🎤 Speech Recognition (Speech-to-Text) ---
   let recognition = null;
   let isRecording = false;
 
@@ -163,71 +127,46 @@ document.addEventListener('DOMContentLoaded', () => {
       recognition.continuous = false; 
       recognition.interimResults = true;
 
-      let baseText = '';
-      let hasHeardSomething = false;
-
-      recognition.onstart = function() {
+      recognition.onstart = () => {
           isRecording = true;
-          hasHeardSomething = false;
           micBtn.classList.add('recording');
-          baseText = chatInput.value ? chatInput.value + ' ' : '';
-          chatInput.placeholder = 'الميكروفون شغال، اتكلم بوضوح...';
+          chatInput.placeholder = 'أنا سامعك، اتكلم...';
+          if (window.currentAudio) window.currentAudio.pause();
+          if (window.speechSynthesis.speaking) window.speechSynthesis.cancel();
       };
 
-      recognition.onresult = function(event) {
+      let hasHeardSomething = false;
+      recognition.onresult = (event) => {
           hasHeardSomething = true;
-          let transcript = '';
-          for (let i = event.resultIndex; i < event.results.length; ++i) {
-              transcript += event.results[i][0].transcript;
-          }
-          chatInput.value = baseText + transcript;
-          
-          if (chatInput.value.trim().length > 0) {
-              chatSendBtn.style.transform = 'scale(1.1)';
-              chatSendBtn.style.boxShadow = '0 0 15px rgba(212,175,55,0.4)';
+          const transcript = event.results[0][0].transcript;
+          chatInput.value = transcript;
+          if (event.results[0].isFinal) {
+              setTimeout(() => { sendMessage(); }, 500);
           }
       };
 
-      recognition.onerror = function(event) {
-          console.error("Speech error:", event.error);
-          micBtn.classList.remove('recording');
-          isRecording = false;
-          
-          if (event.error === 'no-speech') {
-              chatInput.placeholder = 'لم أسمع شيئاً!';
-              alert('مصري لم يسمع صوتك! تأكد من أن الميكروفون غير مكتوم، وتحقق من إعدادات الخصوصية في ويندوز (Windows Privacy Settings -> Microphone).');
-          } else if (event.error === 'not-allowed') {
+      recognition.onerror = (event) => {
+          console.error("Speech Recognition Error", event.error);
+          if (event.error === 'not-allowed') {
               alert('المتصفح ممنوع من استخدام الميكروفون. برجاء إعطاء الصلاحية.');
-          } else {
-              chatInput.placeholder = 'حدث خطأ في المايك...';
           }
       };
 
-      recognition.onend = function() {
+      recognition.onend = () => {
           isRecording = false;
           micBtn.classList.remove('recording');
-          if (!hasHeardSomething && !chatInput.value) {
-              chatInput.placeholder = 'اكتب أو اتكلم هنا...';
-          }
+          chatInput.placeholder = 'اكتب أو اتكلم هنا...';
       };
-  } else {
-      // إخفاء زر المايك لو المتصفح مش بيدعم
-      micBtn.style.display = 'none';
   }
 
-  // Microphone click handler
   micBtn.addEventListener('click', () => {
       if (!recognition) return alert('عفواً، متصفحك لا يدعم خاصية التسجيل الصوتي.');
-      
       if (isRecording) {
           recognition.stop();
       } else {
-          try {
-            recognition.start();
-          } catch(e) {}
+          try { recognition.start(); } catch(e) {}
       }
   });
-
 
   // --- Message UI rendering ---
   function addMessage(text, sender = 'user', imageBase64 = null, category = 'General') {
@@ -256,149 +195,112 @@ document.addEventListener('DOMContentLoaded', () => {
         scrollToBottom();
 
         setTimeout(async () => {
-            // النص أصلاً بينزل نضيف من السيرفر، بس بنأكد عليه هنا كاحتياط
-            let cleanText = text || '';
+            // تنظيف النص تماماً (فشل السيرفر في التنضيف أو داتا قديمة)
+            let cleanText = (text || '').replace(/\[\[Category:.*?\]\]/gi, '').trim();
             let finalCategory = category || 'General';
 
-            // Regex تنظيف إضافي لضمان عدم ظهور أي وسم تحت أي ظرف
-            cleanText = cleanText.replace(/\[\[Category:.*?\]\]/gi, '').trim();
-
+            if (typingDiv.parentNode) msgDiv.removeChild(typingDiv);
+            
             msgDiv.innerHTML = `
             <div class="msg-bubble">${cleanText}</div>
             <div class="msg-time">مصري • دلوقتي ${finalCategory !== 'General' ? `<span style="font-size:0.75rem; color:var(--gold); opacity:0.7;">| ${finalCategory}</span>` : ''}</div>
             `;
             playSound('receive');
             
-            // إضافة رد مصري للذاكرة الحالية (History)
             chatHistory.push({ role: 'model', parts: [{ text: cleanText }] });
+            if (window.masryBrain) window.masryBrain.save(cleanText, finalCategory);
 
-            // إضافة الرد للعقل المحلي (Brain) للأوفلاين
-            if (window.masryBrain) {
-                window.masryBrain.save(cleanText, finalCategory);
-            }
-
-            // نطق الرد (صوت شاكر الطبيعي)
             speakText(cleanText, () => {
                 if (voiceToggle.checked && !isRecording) {
-                    setTimeout(() => { micBtn.click(); }, 500);
+                    setTimeout(() => { try { recognition.start(); } catch(e){} }, 500);
                 }
             });
-            
             scrollToBottom();
         }, 500); 
     }
   }
 
+  // --- Handlers ---
   function scrollToBottom() {
     chatMessages.scrollTop = chatMessages.scrollHeight;
   }
 
-  // --- API Connection ---
-  async function handleSendText(text) {
-    if (!text.trim() && !currentImageBase64) return;
-    
-    const qrContainer = document.getElementById('quick-replies');
-    if(qrContainer && qrContainer.style.display !== 'none') {
-        qrContainer.style.display = 'none';
-        if(audioCtx.state === 'suspended') audioCtx.resume();
-    }
+  async function sendMessage() {
+    const text = chatInput.value.trim();
+    if (!text && !currentImage) return;
 
     const payloadText = text;
-    const payloadImage = currentImageBase64;
-    const payloadMime = currentImageMimeType;
+    const payloadImage = currentImage;
+    const mine = currentImage ? 'image/png' : null;
+
+    chatInput.value = '';
+    imagePreview.style.display = 'none';
+    currentImage = null;
 
     addMessage(payloadText, 'user', payloadImage);
-    
-    chatInput.value = '';
-    
-    // لضمان عدم تضخم الذاكرة، نحتفظ بآخر 20 رسالة فقط
-    if (chatHistory.length > 20) {
-        chatHistory = chatHistory.slice(-20);
-    }
 
-    // Reset image
-    if(currentImageBase64) {
-        removeImgBtn.click();
-    }
-    
-    chatInput.focus();
-
+    // Typing effect
     const typingElement = document.createElement('div');
-    typingElement.className = 'msg msg-masry temp-typing';
-    typingElement.innerHTML = `<div class="typing-bubble"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>`;
+    typingElement.className = 'msg msg-masry';
+    typingElement.innerHTML = '<div class="typing-bubble"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>';
     chatMessages.appendChild(typingElement);
     scrollToBottom();
-
-    // وظيفة البحث المحلي كبديل
-    const runOfflineSearch = async () => {
-        if (typingElement.parentNode) chatMessages.removeChild(typingElement);
-        if (window.masryBrain) {
-            const results = await window.masryBrain.search(payloadText);
-            if (results.length > 0) {
-                const topResult = results[0];
-                addMessage(`(وضعية الأوفلاين) أنا فاكر إننا اتكلمنا في ده قبل كدة في غرفة ${topResult.room}: \n\n ${topResult.text}`, 'masry');
-            } else {
-                addMessage("أنا حالياً شغال بالأوفلاين بس مخي المحلي مش لاقي إجابة للسؤال ده لسة... جرب تسألني في حاجة تانية أو استنى لما النت يرجع يا بطل! 🇪🇬", 'masry');
-            }
-        } else {
-            addMessage("النت فاصل دلوقتي يا غالي... جرب تاني لما ترجع أونلاين.", 'masry');
-        }
-    };
-
-    // --- تحقق الأوفلاين المسبق ---
-    if (!navigator.onLine) {
-        setTimeout(runOfflineSearch, 500);
-        return;
-    }
 
     try {
         const response = await fetch('/api/chat', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                message: payloadText, 
-                image: payloadImage, 
-                mimeType: payloadMime,
-                history: chatHistory 
+            body: JSON.stringify({
+                message: payloadText,
+                image: payloadImage,
+                mimeType: mine,
+                history: chatHistory.slice(-10)
             })
         });
+
         const data = await response.json();
         if (typingElement.parentNode) chatMessages.removeChild(typingElement);
         
         if (data && data.reply) {
-            if (payloadText) {
-                chatHistory.push({ role: 'user', parts: [{ text: payloadText }] });
-            }
+            chatHistory.push({ role: 'user', parts: [{ text: payloadText || "انظر للصورة" }] });
             addMessage(data.reply, 'masry', null, data.category);
         } else {
-            runOfflineSearch();
+            runOfflineSearch(payloadText);
         }
     } catch(error) {
-        console.error("Network flow failed, falling back to brain:", error);
-        runOfflineSearch();
+        if (typingElement.parentNode) chatMessages.removeChild(typingElement);
+        runOfflineSearch(payloadText);
     }
   }
 
-  // --- Event Listeners ---
-  chatSendBtn.addEventListener('click', () => { handleSendText(chatInput.value); });
-  
-  chatInput.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') handleSendText(chatInput.value);
-  });
-
-  quickReplies.forEach(btn => {
-    btn.addEventListener('click', () => {
-      handleSendText(btn.getAttribute('data-q'));
-    });
-  });
-
-  chatInput.addEventListener('input', () => {
-      if (chatInput.value.trim().length > 0) {
-          chatSendBtn.style.transform = 'scale(1.1)';
-          chatSendBtn.style.boxShadow = '0 0 15px rgba(212,175,55,0.4)';
-      } else {
-          chatSendBtn.style.transform = 'scale(1)';
-          chatSendBtn.style.boxShadow = 'none';
+  function runOfflineSearch(query) {
+      if (window.masryBrain) {
+          window.masryBrain.search(query).then(result => {
+              if (result) {
+                  addMessage(result.text + " (من الذاكرة المحلية 🧠)", 'masry', null, result.category);
+              } else {
+                  addMessage("النت قاطع ومخبيش عليك مش فاكر حاجة عن الموضوع ده.. أول ما يرجع هقولك!", 'masry');
+              }
+          });
       }
+  }
+
+  sendBtn.addEventListener('click', sendMessage);
+  chatInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') sendMessage();
+  });
+
+  // Image handling
+  imageInput.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        currentImage = e.target.result;
+        imagePreview.src = currentImage;
+        imagePreview.style.display = 'block';
+      };
+      reader.readAsDataURL(file);
+    }
   });
 });
