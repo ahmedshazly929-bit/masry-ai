@@ -4,6 +4,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const sendBtn = document.getElementById('send-btn');
   const micBtn = document.getElementById('mic-btn');
   const voiceToggle = document.getElementById('voice-toggle');
+  const restartBtn = document.getElementById('chat-restart');
   const imageInput = document.getElementById('image-input');
   const imagePreview = document.getElementById('image-preview');
 
@@ -288,6 +289,30 @@ document.addEventListener('DOMContentLoaded', () => {
   sendBtn.addEventListener('click', sendMessage);
   chatInput.addEventListener('keypress', (e) => {
     if (e.key === 'Enter') sendMessage();
+  });
+
+  // --- Restart Chat Logic ---
+  restartBtn.addEventListener('click', () => {
+      if (confirm('هل تريد مسح المحادثة والبدء من جديد؟')) {
+          // مسح الذاكرة البرمجية
+          chatHistory = [];
+          
+          // مسح الرسائل من الواجهة وترك رسالة الترحيب فقط
+          chatMessages.innerHTML = `
+            <div class="msg msg-masry">
+                <div class="msg-bubble">
+                    أهلاً بيك من جديد! 👋 أنا <strong>مصري</strong>... جاهز لأي سؤال.
+                </div>
+                <div class="msg-time">مصري • دلوقتي</div>
+            </div>
+          `;
+          
+          // وقف أي صوت شغال
+          if (window.currentAudio) window.currentAudio.pause();
+          if (window.speechSynthesis.speaking) window.speechSynthesis.cancel();
+          
+          playSound('receive');
+      }
   });
 
   // Image handling

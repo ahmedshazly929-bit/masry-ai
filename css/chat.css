@@ -84,6 +84,28 @@
   line-height: 1;
 }
 
+.restart-btn {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid var(--glass-border);
+  color: var(--text-dim);
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin: 0 5px;
+}
+
+.restart-btn:hover {
+  background: rgba(212,175,55,0.1);
+  border-color: var(--gold);
+  color: var(--gold);
+  transform: rotate(-45deg);
+}
+
 /* Messages */
 .chat-messages {
   flex: 1;
