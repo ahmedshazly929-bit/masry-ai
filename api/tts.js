@@ -11,7 +11,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const tts = new MsEdgeTTS();
+    const tts = new MsEdgeTTS({});
     // Shakir voice, Energetic rate (+20%)
     const buffer = await tts.getAudioBuffer(text, 'ar-EG-ShakirNeural', '+20%');
     

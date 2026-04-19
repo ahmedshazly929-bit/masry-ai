@@ -24,7 +24,7 @@ const MASRY_SYSTEM_INSTRUCTION = `
 `;
 
 const { MsEdgeTTS } = require('edge-tts-node');
-const tts = new MsEdgeTTS();
+const tts = new MsEdgeTTS({});
 
 async function fetchWithRetry(url, payload, attempts = 2) {
     for (let i = 1; i <= attempts; i++) {
