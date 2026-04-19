@@ -230,7 +230,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
   // --- Message UI rendering ---
-  function addMessage(text, sender = 'user', imageBase64 = null) {
+  function addMessage(text, sender = 'user', imageBase64 = null, category = 'General') {
     const msgDiv = document.createElement('div');
     msgDiv.className = `msg msg-${sender}`;
     
@@ -256,23 +256,16 @@ document.addEventListener('DOMContentLoaded', () => {
         scrollToBottom();
 
         setTimeout(async () => {
-            // تنقية شاملة للنص من أي وسوم داخلية قبل العرض أو النطق
-            let category = 'General';
-            
-            // Regex أكتر مرونة لمطابقة أي نوع من الأقواس
-            const tagRegex = /\[\[Category:\s*([\w\s-]+)\s*\]\]/gi;
-            const categoryMatch = tagRegex.exec(text);
-            
-            if (categoryMatch) {
-                category = categoryMatch[1].trim();
-            }
+            // النص أصلاً بينزل نضيف من السيرفر، بس بنأكد عليه هنا كاحتياط
+            let cleanText = text || '';
+            let finalCategory = category || 'General';
 
-            // حذف أي وسوم متبقية تماماً من النص المعروض والمنطوق
-            const cleanText = text.replace(/\[\[Category:.*?\]\]/gi, '').trim();
+            // Regex تنظيف إضافي لضمان عدم ظهور أي وسم تحت أي ظرف
+            cleanText = cleanText.replace(/\[\[Category:.*?\]\]/gi, '').trim();
 
             msgDiv.innerHTML = `
             <div class="msg-bubble">${cleanText}</div>
-            <div class="msg-time">مصري • دلوقتي ${category !== 'General' ? `<span style="font-size:0.75rem; color:var(--gold); opacity:0.7;">| ${category}</span>` : ''}</div>
+            <div class="msg-time">مصري • دلوقتي ${finalCategory !== 'General' ? `<span style="font-size:0.75rem; color:var(--gold); opacity:0.7;">| ${finalCategory}</span>` : ''}</div>
             `;
             playSound('receive');
             
@@ -281,10 +274,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // إضافة الرد للعقل المحلي (Brain) للأوفلاين
             if (window.masryBrain) {
-                window.masryBrain.save(cleanText, category);
+                window.masryBrain.save(cleanText, finalCategory);
             }
 
-            // قراءة الرد (نستخدم النص النظيف تماماً)
+            // نطق الرد (صوت شاكر الطبيعي)
             speakText(cleanText, () => {
                 if (voiceToggle.checked && !isRecording) {
                     setTimeout(() => { micBtn.click(); }, 500);
@@ -372,13 +365,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const data = await response.json();
         if (typingElement.parentNode) chatMessages.removeChild(typingElement);
         
-        if (data.reply) {
+        if (data && data.reply) {
             if (payloadText) {
                 chatHistory.push({ role: 'user', parts: [{ text: payloadText }] });
             }
-            addMessage(data.reply, 'masry');
+            addMessage(data.reply, 'masry', null, data.category);
         } else {
-            // لو الرد راجع فاضي بس الاتصال شغال
             runOfflineSearch();
         }
     } catch(error) {

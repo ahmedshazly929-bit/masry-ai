@@ -10,10 +10,10 @@ const MASRY_SYSTEM_INSTRUCTION = `
 في نهاية كل رد، أضف وسماً للمحتوى ضمن سطر جديد تماماً بالشكل التالي:
 [[Category:Name]]
 حيث Name يكون واحداً من: (Identity, Knowledge, Emotion, Work)
-- Identity: لو الكلام عنك (مصري) أو عن المستخدم وعلاقتكم.
-- Knowledge: لو معلومات عامة، تاريخ، أخبار، أو حقائق.
-- Emotion: لو هزار، نكت، أمثال شعبية، أو تعبير عن مشاعر.
-- Work: لو بيطلب منك مهمة محددة أو مساعدة تقنية.
+- Identity: الكلام عن مصري أو علاقتكم.
+- Knowledge: معلومات عامة.
+- Emotion: هزار، نكت، مشاعر.
+- Work: طلبات تقنية.
 `;
 
 async function chatWithGemini(userMessage, imageBase64, mimeType, API_KEY, history = []) {
@@ -41,7 +41,6 @@ async function chatWithGemini(userMessage, imageBase64, mimeType, API_KEY, histo
             payload.contents.push({ role: "user", parts: parts });
         }
 
-        // محاولات تلقائية (Reliability Shield)
         for (let attempt = 1; attempt <= 2; attempt++) {
             try {
                 const response = await fetch(url, {
@@ -52,19 +51,29 @@ async function chatWithGemini(userMessage, imageBase64, mimeType, API_KEY, histo
 
                 if (response.ok) {
                     const data = await response.json();
-                    return data.candidates[0].content.parts[0].text;
+                    let rawReply = data.candidates[0].content.parts[0].text;
+                    
+                    // --- تنظيف المصدر (Source Cleaning) ---
+                    // استخراج التصانيف للاستخدام البرمجي في الذاكرة (لو حبينا نبعتها في حقل منفصل مستقبلاً)
+                    let category = 'General';
+                    const categoryMatch = rawReply.match(/\[\[Category:\s*([\w\s-]+)\s*\]\]/i);
+                    if (categoryMatch) category = categoryMatch[1].trim();
+                    
+                    // مسح الوسوم تماماً من النص اللي هيروح للمستخدم
+                    let cleanReply = rawReply.replace(/\[\[Category:.*?\]\]/gi, '').trim();
+                    
+                    return { reply: cleanReply, category: category };
                 }
 
-                if (response.status === 429) return "يا غالي إحنا اتكلمنا كتير أوي دلوقتي! جوجل مش ملاحقة علينا... دقيقة ونرجع نكمل. ☕🇪🇬";
+                if (response.status === 429) return { reply: "يا غالي جوجل بتقول اهدا شوية... دقيقة ونرجع نكمل! ☕" };
                 if (response.status === 503) {
-                    console.warn(`503 for ${modelName}, attempt ${attempt}`);
                     await new Promise(r => setTimeout(r, 1000));
                     continue;
                 }
             } catch (err) { console.error(`Fetch err ${modelName}:`, err); }
         }
     }
-    return "يا صاحبي جوجل دلوقتي مزحومة جداً... خلينا ندردش كمان شوية، أو لو حابب تفتح 'العقل المحلي' أنا فاكر حاجات كتير ممكن أجاوبك عليها! 🇪🇬⚙️";
+    return { reply: "يا صاحبي جوجل دلوقتي مزحومة جداً... خلينا ندردش كمان شوية. 🇪🇬⚙️" };
 }
 
 export default async function handler(req, res) {
@@ -83,8 +92,8 @@ export default async function handler(req, res) {
         parts: item.parts.filter(p => p.text)
     }));
 
-    const responseMsg = await chatWithGemini(message, image, mimeType, API_KEY, cleanHistory);
-    res.status(200).json({ reply: responseMsg });
+    const result = await chatWithGemini(message, image, mimeType, API_KEY, cleanHistory);
+    res.status(200).json(result);
   } catch(error) {
     res.status(500).json({ reply: "تحصل في أحسن العائلات! السيرفر حصله تشنج بسيط، جرب تبعت الرسالة تاني. 🇪🇬" });
   }

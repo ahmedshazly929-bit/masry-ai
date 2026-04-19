@@ -1,4 +1,4 @@
-const { EdgeTTS } = require('edge-tts-node');
+const { MsEdgeTTS } = require('edge-tts-node');
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
@@ -11,9 +11,9 @@ export default async function handler(req, res) {
   }
 
   try {
-    const tts = new EdgeTTS();
-    // Shakir voice, Fast rate (+30%)
-    const buffer = await tts.getAudioBuffer(text, 'ar-EG-ShakirNeural', '+30%');
+    const tts = new MsEdgeTTS();
+    // Shakir voice, Energetic rate (+20%)
+    const buffer = await tts.getAudioBuffer(text, 'ar-EG-ShakirNeural', '+20%');
     
     res.setHeader('Content-Type', 'audio/mpeg');
     res.setHeader('Cache-Control', 'public, max-age=3600');

@@ -1,7 +1,6 @@
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
-const https = require('https');
 require('dotenv').config();
 
 const PORT = 3333;
@@ -18,11 +17,14 @@ const MASRY_SYSTEM_INSTRUCTION = `
 في نهاية كل رد، أضف وسماً للمحتوى ضمن سطر جديد تماماً بالشكل التالي:
 [[Category:Name]]
 حيث Name يكون واحداً من: (Identity, Knowledge, Emotion, Work)
-- Identity: لو الكلام عنك (مصري) أو عن المستخدم وعلاقتكم.
-- Knowledge: لو معلومات عامة، تاريخ، أخبار، أو حقائق.
-- Emotion: لو هزار، نكت، أمثال شعبية، أو تعبير عن مشاعر.
-- Work: لو بيطلب منك مهمة محددة أو مساعدة تقنية.
+- Identity: الكلام عن مصري أو علاقتكم.
+- Knowledge: معلومات عامة.
+- Emotion: هزار، نكت، مشاعر.
+- Work: طلبات تقنية.
 `;
+
+const { MsEdgeTTS } = require('edge-tts-node');
+const tts = new MsEdgeTTS();
 
 async function fetchWithRetry(url, payload, attempts = 2) {
     for (let i = 1; i <= attempts; i++) {
@@ -35,7 +37,6 @@ async function fetchWithRetry(url, payload, attempts = 2) {
             if (res.ok) return await res.json();
             if (res.status === 429) return { error: 'quota' };
             if (res.status === 503 && i < attempts) {
-                console.warn(`Attempt ${i} failed with 503. Retrying...`);
                 await new Promise(r => setTimeout(r, 1500));
                 continue;
             }
@@ -48,7 +49,7 @@ async function fetchWithRetry(url, payload, attempts = 2) {
 }
 
 async function chatWithGemini(userMessage, imageBase64, mimeType, history = []) {
-    if (!API_KEY) return "فين المفتاح يا ريس؟ حط GEMINI_API_KEY في ملف .env عشان ندردش! 🇪🇬";
+    if (!API_KEY) return { reply: "فين المفتاح يا ريس؟ حط GEMINI_API_KEY في ملف .env عشان ندردش! 🇪🇬" };
 
     for (const model of MODELS) {
         const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${API_KEY}`;
@@ -73,31 +74,31 @@ async function chatWithGemini(userMessage, imageBase64, mimeType, history = []) 
 
         try {
             const result = await fetchWithRetry(url, payload);
-            if (result.candidates) return result.candidates[0].content.parts[0].text;
-            if (result.error === 'quota') return "يا غالي جوجل بتقول اهدا شوية... دقيقة ونرجع نكمل! ☕";
+            if (result.candidates) {
+                let rawReply = result.candidates[0].content.parts[0].text;
+                let category = 'General';
+                const categoryMatch = rawReply.match(/\[\[Category:\s*([\w\s-]+)\s*\]\]/i);
+                if (categoryMatch) category = categoryMatch[1].trim();
+                let cleanReply = rawReply.replace(/\[\[Category:.*?\]\]/gi, '').trim();
+                return { reply: cleanReply, category: category };
+            }
+            if (result.error === 'quota') return { reply: "يا غالي جوجل بتقول اهدا شوية... دقيقة ونرجع نكمل! ☕" };
         } catch (e) { console.error(`Err with ${model}:`, e); }
     }
-    return "يا صاحبي جوجل دلوقتي مزحومة جداً... خلينا ندردش كمان شوية. 🇪🇬⚙️";
+    return { reply: "يا صاحبي جوجل دلوقتي مزحومة جداً... خلينا ندردش كمان شوية. 🇪🇬⚙️" };
 }
-
-const { EdgeTTS } = require('edge-tts-node');
-const tts = new EdgeTTS();
 
 const server = http.createServer((req, res) => {
     // --- TTS Endpoint ---
     if (req.method === 'GET' && req.url.startsWith('/api/tts')) {
         const urlParams = new URL(req.url, `http://${req.headers.host}`);
         const text = urlParams.searchParams.get('text');
+        if (!text) return res.writeHead(400) & res.end('Missing text');
         
-        if (!text) {
-            res.writeHead(400); res.end('Missing text');
-            return;
-        }
-
         (async () => {
             try {
-                // استخدام صوت شاكر (ar-EG-ShakirNeural) مع زيادة السرعة بناء على طلب الريس
-                const buffer = await tts.getAudioBuffer(text, 'ar-EG-ShakirNeural', '+30%');
+                // استخدام MsEdgeTTS مع النطق المصري شاكر
+                const buffer = await tts.getAudioBuffer(text, 'ar-EG-ShakirNeural', '+20%');
                 res.writeHead(200, { 'Content-Type': 'audio/mpeg' });
                 res.end(buffer);
             } catch (err) {
@@ -109,14 +110,32 @@ const server = http.createServer((req, res) => {
     }
 
     if (req.method === 'POST' && req.url === '/api/chat') {
-        // ... (existing chat logic)
+        let body = '';
+        req.on('data', chunk => { body += chunk.toString(); });
+        req.on('end', async () => {
+            try {
+                const { message, image, mimeType, history } = JSON.parse(body);
+                const cleanHistory = (history || []).map(item => ({
+                    role: item.role,
+                    parts: item.parts.filter(p => p.text)
+                }));
+                const result = await chatWithGemini(message, image, mimeType, cleanHistory);
+                res.writeHead(200, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify(result));
+            } catch (err) { res.writeHead(500); res.end('Error'); }
+        });
     } else {
-        // ... (existing static file logic)
+        let filePath = '.' + req.url;
+        if (filePath === './') filePath = './index.html';
+        const extname = path.extname(filePath);
+        const contentType = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.png': 'image/png', '.jpg': 'image/jpg', '.ico': 'image/x-icon' }[extname] || 'text/plain';
+        fs.readFile(filePath, (error, content) => {
+            if (error) { res.writeHead(404); res.end('Not Found'); }
+            else { res.writeHead(200, { 'Content-Type': contentType }); res.end(content, 'utf-8'); }
+        });
     }
 });
 
 server.listen(PORT, () => {
-    console.log(`Masry AI Robust Server running at http://localhost:${PORT}`);
-    if (API_KEY) console.log('✅ Gemini API Key found.');
-    else console.log('❌ GEMINI_API_KEY NOT FOUND in .env');
+    console.log(`Masry AI Clean Server running at http://localhost:${PORT}`);
 });
