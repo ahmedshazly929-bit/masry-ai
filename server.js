@@ -39,7 +39,7 @@ const MASRY_SYSTEM_INSTRUCTION = `
 `;
 
 // --- دالة الاتصال بـ Google Gemini API ---
-async function chatWithGemini(userMessage, imageBase64, mimeType) {
+async function chatWithGemini(userMessage, imageBase64, mimeType, history = []) {
     if (!API_KEY || API_KEY === 'YOUR_API_KEY_HERE') {
         return "للأسف أنا مش قادر أتصل בעقلي دلوقتي... المبرمج لسة محطش الـ API Key في ملف الـ .env الخاص بيا! هات المفتاح من Google AI Studio وحطه عشان ندردش بجد. 🇪🇬";
     }
@@ -71,13 +71,26 @@ async function chatWithGemini(userMessage, imageBase64, mimeType) {
             parts: [{ text: MASRY_SYSTEM_INSTRUCTION }]
         },
         contents: [
-            { role: "user", parts: parts }
+            ...history, // تضمين المحادثة السابقة
         ],
         generationConfig: {
             temperature: 0.7,
             maxOutputTokens: 250,
         }
     };
+
+    // لو مفيش رسالة في الهيستوري لسه، أو لو فيه صورة جديدة، بنضيف الجزء الحالي
+    if (imageBase64 && mimeType) {
+        payload.contents.push({
+            role: "user",
+            parts: parts
+        });
+    } else if (history.length === 0 || history[history.length - 1].role === 'model') {
+        payload.contents.push({
+            role: "user",
+            parts: parts
+        });
+    }
 
     try {
         const response = await fetch(url, {
@@ -114,10 +127,16 @@ const server = http.createServer((req, res) => {
       req.on('data', chunk => { body += chunk.toString(); });
       req.on('end', async () => {
           try {
-              const data = JSON.parse(body);
+              const { message, image, mimeType, history } = JSON.parse(body);
               
+              // تنظيف الهيستوري
+              const cleanHistory = (history || []).map(item => ({
+                role: item.role,
+                parts: item.parts.filter(p => p.text)
+              }));
+
               // الاتصال بالـ API الحقيقي 
-              const responseMsg = await chatWithGemini(data.message, data.image, data.mimeType);
+              const responseMsg = await chatWithGemini(message, image, mimeType, cleanHistory);
               
               res.writeHead(200, { 'Content-Type': 'application/json' });
               res.end(JSON.stringify({ reply: responseMsg }));

@@ -19,6 +19,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   let currentImageBase64 = null;
   let currentImageMimeType = null;
+  
+  // --- 🧠 Conversation Memory ---
+  let chatHistory = []; // { role: 'user'|'model', parts: [{ text: '...' }] }
 
   // --- 📷 Image Attachment Handling ---
   attachBtn.addEventListener('click', () => { fileInput.click(); });
@@ -240,6 +243,9 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
             playSound('receive');
             
+            // إضافة رد مصري للذاكرة
+            chatHistory.push({ role: 'model', parts: [{ text: text }] });
+
             // قراءة الرد مع إمكانية فتح المايك بعد ما يخلص
             speakText(text, () => {
                 // لو الرد الصوتي مفعل، نفتح المايك أوتوماتيك للدردشة "المستمرة"
@@ -275,8 +281,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
     addMessage(payloadText, 'user', payloadImage);
     
+    // إضافة رسالة المستخدم للذاكرة (بدون الصورة لتوفير المساحة، الصورة ترسل في الطلب الحالي فقط)
+    if (payloadText) {
+        chatHistory.push({ role: 'user', parts: [{ text: payloadText }] });
+    }
+
     chatInput.value = '';
     
+    // لضمان عدم تضخم الذاكرة، نحتفظ بآخر 15 رسالة فقط
+    if (chatHistory.length > 20) {
+        chatHistory = chatHistory.slice(-20);
+    }
+
     // Reset image
     if(currentImageBase64) {
         removeImgBtn.click();
@@ -294,7 +310,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const response = await fetch('/api/chat', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ message: payloadText, image: payloadImage, mimeType: payloadMime })
+            body: JSON.stringify({ 
+                message: payloadText, 
+                image: payloadImage, 
+                mimeType: payloadMime,
+                history: chatHistory // إرسال الذاكرة بالكامل للسيرفر
+            })
         });
         const data = await response.json();
         chatMessages.removeChild(typingElement);

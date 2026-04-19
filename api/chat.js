@@ -8,7 +8,7 @@ const MASRY_SYSTEM_INSTRUCTION = `
 خلي إجاباتك دايماً موجزة ومركزة، ومتزدش عن فقرتين قصيرين لإن دي محادثة دردشة سريعة.
 `;
 
-async function chatWithGemini(userMessage, imageBase64, mimeType, API_KEY) {
+async function chatWithGemini(userMessage, imageBase64, mimeType, API_KEY, history = []) {
     if (!API_KEY || API_KEY === 'YOUR_API_KEY_HERE') {
         return "للأسف أنا مش قادر أتصل بعقلي دلوقتي... المبرمج لسة محطش الـ API Key في البيئة بتاعة السيرفر! 🇪🇬";
     }
@@ -38,13 +38,28 @@ async function chatWithGemini(userMessage, imageBase64, mimeType, API_KEY) {
             parts: [{ text: MASRY_SYSTEM_INSTRUCTION }]
         },
         contents: [
-            { role: "user", parts: parts }
+            ...history, // تضمين المحادثة السابقة
         ],
         generationConfig: {
             temperature: 0.7,
             maxOutputTokens: 250,
         }
     };
+
+    // لو مفيش رسالة في الهيستوري لسه، أو لو فيه صورة جديدة، بنضيف الجزء الحالي
+    if (imageBase64 && mimeType) {
+        // لو فيه صورة، لازم تتبعت في آخر رسالة role: user
+        payload.contents.push({
+            role: "user",
+            parts: parts
+        });
+    } else if (history.length === 0 || history[history.length - 1].role === 'model') {
+        // لو مبعتناش التاريخ لسه، أو آخر حاجة كانت رد الموديل
+        payload.contents.push({
+            role: "user",
+            parts: parts
+        });
+    }
 
     try {
         const response = await fetch(url, {
@@ -92,10 +107,16 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { message, image, mimeType } = req.body;
+    const { message, image, mimeType, history } = req.body;
     const API_KEY = process.env.GEMINI_API_KEY; // Vercel environment variable
     
-    const responseMsg = await chatWithGemini(message, image, mimeType, API_KEY);
+    // تنظيف الهيستوري عشان نتأكد إن مفيش صور قديمة بتتقل الطلب
+    const cleanHistory = (history || []).map(item => ({
+        role: item.role,
+        parts: item.parts.filter(p => p.text) // بناخد النصوص بس
+    }));
+
+    const responseMsg = await chatWithGemini(message, image, mimeType, API_KEY, cleanHistory);
     
     res.status(200).json({ reply: responseMsg });
   } catch(error) {
