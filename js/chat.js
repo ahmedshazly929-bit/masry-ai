@@ -237,18 +237,19 @@ document.addEventListener('DOMContentLoaded', () => {
         scrollToBottom();
 
         setTimeout(async () => {
-            // استخراج التصنيف من النص لو موجود
+            // استخراج التصنيف من النص لو موجود بأي شكل
             let category = 'General';
-            const categoryMatch = text.match(/\[\[Category:\s*(\w+)\s*\]\]/);
+            const categoryMatch = text.match(/\[\[Category:\s*(\w+)\s*\]\]/i);
             let cleanText = text;
             if (categoryMatch) {
                 category = categoryMatch[1];
-                cleanText = text.replace(/\[\[Category:.*?\]\]/, '').trim();
+                // تنظيف كل أشكال الوسوم
+                cleanText = text.replace(/\[\[Category:.*?\]\]/gi, '').trim();
             }
 
             msgDiv.innerHTML = `
             <div class="msg-bubble">${cleanText}</div>
-            <div class="msg-time">مصري • دلوقتي ${category !== 'General' ? `<span style="font-size:0.75rem; color:var(--gold)">| ${category}</span>` : ''}</div>
+            <div class="msg-time">مصري • دلوقتي ${category !== 'General' ? `<span style="font-size:0.75rem; color:var(--gold); opacity:0.7;">| ${category}</span>` : ''}</div>
             `;
             playSound('receive');
             
@@ -262,11 +263,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // قراءة الرد (نستخدم النص النظيف)
             speakText(cleanText, () => {
-                // لو الرد الصوتي مفعل، نفتح المايك أوتوماتيك للدردشة "المستمرة"
                 if (voiceToggle.checked && !isRecording) {
-                    setTimeout(() => {
-                        micBtn.click();
-                    }, 500);
+                    setTimeout(() => { micBtn.click(); }, 500);
                 }
             });
             
@@ -315,22 +313,25 @@ document.addEventListener('DOMContentLoaded', () => {
     chatMessages.appendChild(typingElement);
     scrollToBottom();
 
-    // --- تحقق الأوفلاين (Offline Mode) ---
-    if (!navigator.onLine) {
-        setTimeout(async () => {
-            chatMessages.removeChild(typingElement);
-            if (window.masryBrain) {
-                const results = await window.masryBrain.search(payloadText);
-                if (results.length > 0) {
-                    const topResult = results[0];
-                    addMessage(`(وضعية الأوفلاين) أنا فاكر إننا اتكلمنا في ده قبل كدة في غرفة ${topResult.room}: \n\n ${topResult.text}`, 'masry');
-                } else {
-                    addMessage("أنا حالياً شغال بالأوفلاين بس مخي المحلي مش لاقي إجابة للسؤال ده لسة... جرب تسألني في حاجة تانية أو استنى لما النت يرجع يا بطل! 🇪🇬", 'masry');
-                }
+    // وظيفة البحث المحلي كبديل
+    const runOfflineSearch = async () => {
+        if (typingElement.parentNode) chatMessages.removeChild(typingElement);
+        if (window.masryBrain) {
+            const results = await window.masryBrain.search(payloadText);
+            if (results.length > 0) {
+                const topResult = results[0];
+                addMessage(`(وضعية الأوفلاين) أنا فاكر إننا اتكلمنا في ده قبل كدة في غرفة ${topResult.room}: \n\n ${topResult.text}`, 'masry');
             } else {
-                addMessage("النت فاصل دلوقتي يا غالي... جرب تاني لما ترجع أونلاين.", 'masry');
+                addMessage("أنا حالياً شغال بالأوفلاين بس مخي المحلي مش لاقي إجابة للسؤال ده لسة... جرب تسألني في حاجة تانية أو استنى لما النت يرجع يا بطل! 🇪🇬", 'masry');
             }
-        }, 800);
+        } else {
+            addMessage("النت فاصل دلوقتي يا غالي... جرب تاني لما ترجع أونلاين.", 'masry');
+        }
+    };
+
+    // --- تحقق الأوفلاين المسبق ---
+    if (!navigator.onLine) {
+        setTimeout(runOfflineSearch, 500);
         return;
     }
 
@@ -346,7 +347,7 @@ document.addEventListener('DOMContentLoaded', () => {
             })
         });
         const data = await response.json();
-        chatMessages.removeChild(typingElement);
+        if (typingElement.parentNode) chatMessages.removeChild(typingElement);
         
         if (data.reply) {
             if (payloadText) {
@@ -354,11 +355,12 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             addMessage(data.reply, 'masry');
         } else {
-            addMessage("عذراً، حصلت مشكلة تقنية وجوجل مش قادرة ترد دلوقتي. جرب كمان شوية.", 'masry');
+            // لو الرد راجع فاضي بس الاتصال شغال
+            runOfflineSearch();
         }
     } catch(error) {
-        chatMessages.removeChild(typingElement);
-        addMessage("عذراً، فيه عطل في التواصل معايا دلوقتي. حاول تاني كمان شوية.", 'masry');
+        console.error("Network flow failed, falling back to brain:", error);
+        runOfflineSearch();
     }
   }
 
