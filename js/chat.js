@@ -295,14 +295,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     addMessage(payloadText, 'user', payloadImage);
     
-    // إضافة رسالة المستخدم للذاكرة (بدون الصورة لتوفير المساحة، الصورة ترسل في الطلب الحالي فقط)
-    if (payloadText) {
-        chatHistory.push({ role: 'user', parts: [{ text: payloadText }] });
-    }
-
     chatInput.value = '';
     
-    // لضمان عدم تضخم الذاكرة، نحتفظ بآخر 15 رسالة فقط
+    // لضمان عدم تضخم الذاكرة، نحتفظ بآخر 20 رسالة فقط
     if (chatHistory.length > 20) {
         chatHistory = chatHistory.slice(-20);
     }
@@ -352,7 +347,15 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         const data = await response.json();
         chatMessages.removeChild(typingElement);
-        addMessage(data.reply, 'masry');
+        
+        if (data.reply) {
+            if (payloadText) {
+                chatHistory.push({ role: 'user', parts: [{ text: payloadText }] });
+            }
+            addMessage(data.reply, 'masry');
+        } else {
+            addMessage("عذراً، حصلت مشكلة تقنية وجوجل مش قادرة ترد دلوقتي. جرب كمان شوية.", 'masry');
+        }
     } catch(error) {
         chatMessages.removeChild(typingElement);
         addMessage("عذراً، فيه عطل في التواصل معايا دلوقتي. حاول تاني كمان شوية.", 'masry');
