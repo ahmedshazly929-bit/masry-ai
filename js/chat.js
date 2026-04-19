@@ -256,15 +256,19 @@ document.addEventListener('DOMContentLoaded', () => {
         scrollToBottom();
 
         setTimeout(async () => {
-            // استخراج التصنيف من النص لو موجود بأي شكل
+            // تنقية شاملة للنص من أي وسوم داخلية قبل العرض أو النطق
             let category = 'General';
-            const categoryMatch = text.match(/\[\[Category:\s*(\w+)\s*\]\]/i);
-            let cleanText = text;
+            
+            // Regex أكتر مرونة لمطابقة أي نوع من الأقواس
+            const tagRegex = /\[\[Category:\s*([\w\s-]+)\s*\]\]/gi;
+            const categoryMatch = tagRegex.exec(text);
+            
             if (categoryMatch) {
-                category = categoryMatch[1];
-                // تنظيف كل أشكال الوسوم
-                cleanText = text.replace(/\[\[Category:.*?\]\]/gi, '').trim();
+                category = categoryMatch[1].trim();
             }
+
+            // حذف أي وسوم متبقية تماماً من النص المعروض والمنطوق
+            const cleanText = text.replace(/\[\[Category:.*?\]\]/gi, '').trim();
 
             msgDiv.innerHTML = `
             <div class="msg-bubble">${cleanText}</div>
@@ -280,7 +284,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 window.masryBrain.save(cleanText, category);
             }
 
-            // قراءة الرد (نستخدم النص النظيف)
+            // قراءة الرد (نستخدم النص النظيف تماماً)
             speakText(cleanText, () => {
                 if (voiceToggle.checked && !isRecording) {
                     setTimeout(() => { micBtn.click(); }, 500);
