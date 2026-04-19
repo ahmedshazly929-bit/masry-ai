@@ -236,18 +236,32 @@ document.addEventListener('DOMContentLoaded', () => {
         chatMessages.appendChild(msgDiv);
         scrollToBottom();
 
-        setTimeout(() => {
+        setTimeout(async () => {
+            // استخراج التصنيف من النص لو موجود
+            let category = 'General';
+            const categoryMatch = text.match(/\[\[Category:\s*(\w+)\s*\]\]/);
+            let cleanText = text;
+            if (categoryMatch) {
+                category = categoryMatch[1];
+                cleanText = text.replace(/\[\[Category:.*?\]\]/, '').trim();
+            }
+
             msgDiv.innerHTML = `
-            <div class="msg-bubble">${text}</div>
-            <div class="msg-time">مصري • دلوقتي</div>
+            <div class="msg-bubble">${cleanText}</div>
+            <div class="msg-time">مصري • دلوقتي ${category !== 'General' ? `<span style="font-size:0.75rem; color:var(--gold)">| ${category}</span>` : ''}</div>
             `;
             playSound('receive');
             
-            // إضافة رد مصري للذاكرة
-            chatHistory.push({ role: 'model', parts: [{ text: text }] });
+            // إضافة رد مصري للذاكرة الحالية (History)
+            chatHistory.push({ role: 'model', parts: [{ text: cleanText }] });
 
-            // قراءة الرد مع إمكانية فتح المايك بعد ما يخلص
-            speakText(text, () => {
+            // إضافة الرد للعقل المحلي (Brain) للأوفلاين
+            if (window.masryBrain) {
+                window.masryBrain.save(cleanText, category);
+            }
+
+            // قراءة الرد (نستخدم النص النظيف)
+            speakText(cleanText, () => {
                 // لو الرد الصوتي مفعل، نفتح المايك أوتوماتيك للدردشة "المستمرة"
                 if (voiceToggle.checked && !isRecording) {
                     setTimeout(() => {
@@ -306,6 +320,25 @@ document.addEventListener('DOMContentLoaded', () => {
     chatMessages.appendChild(typingElement);
     scrollToBottom();
 
+    // --- تحقق الأوفلاين (Offline Mode) ---
+    if (!navigator.onLine) {
+        setTimeout(async () => {
+            chatMessages.removeChild(typingElement);
+            if (window.masryBrain) {
+                const results = await window.masryBrain.search(payloadText);
+                if (results.length > 0) {
+                    const topResult = results[0];
+                    addMessage(`(وضعية الأوفلاين) أنا فاكر إننا اتكلمنا في ده قبل كدة في غرفة ${topResult.room}: \n\n ${topResult.text}`, 'masry');
+                } else {
+                    addMessage("أنا حالياً شغال بالأوفلاين بس مخي المحلي مش لاقي إجابة للسؤال ده لسة... جرب تسألني في حاجة تانية أو استنى لما النت يرجع يا بطل! 🇪🇬", 'masry');
+                }
+            } else {
+                addMessage("النت فاصل دلوقتي يا غالي... جرب تاني لما ترجع أونلاين.", 'masry');
+            }
+        }, 800);
+        return;
+    }
+
     try {
         const response = await fetch('/api/chat', {
             method: 'POST',
@@ -314,7 +347,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 message: payloadText, 
                 image: payloadImage, 
                 mimeType: payloadMime,
-                history: chatHistory // إرسال الذاكرة بالكامل للسيرفر
+                history: chatHistory 
             })
         });
         const data = await response.json();
